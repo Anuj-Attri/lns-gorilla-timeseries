@@ -91,6 +91,7 @@ add_executable(tests
     tests/test_lns_roundtrip.cpp
     tests/test_gorilla.cpp
     tests/test_composite.cpp
+    tests/test_probe.cpp
 )
 target_include_directories(tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -120,6 +121,11 @@ add_executable(stat_sig bench/stat_sig.cpp)
 target_include_directories(stat_sig PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(stat_sig PRIVATE lns_codecs)
 target_compile_options(stat_sig PRIVATE ${OPT_FLAGS})
+
+add_executable(bench_probe bench/bench_probe.cpp)
+target_include_directories(bench_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(bench_probe PRIVATE benchmark::benchmark benchmark::benchmark_main)
+target_compile_options(bench_probe PRIVATE ${OPT_FLAGS})
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 add_executable(gen_synthetic tools/gen_synthetic.cpp)
