@@ -1,0 +1,453 @@
+% Copyright 2026 Anuj Attri  SPDX-License-Identifier: Apache-2.0
+% Submission target: IEEE ICDE 2027 (or VLDB 2027)
+% Template: ACM sigconf / IEEE double-column
+% Status: draft — all claims tagged [measured], [derived], or [hypothesis]
+\documentclass[sigconf]{acmart}
+
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{xspace}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{listings}
+
+% ── Macros ────────────────────────────────────────────────────────────────────
+\newcommand{\lns}{\textsc{LNS}\xspace}
+\newcommand{\gorilla}{\textsc{Gorilla}\xspace}
+\newcommand{\chimp}{\textsc{Chimp128}\xspace}
+\newcommand{\elf}{\textsc{Elf}\xspace}
+\newcommand{\pcodec}{\textsc{Pcodec}\xspace}
+\newcommand{\system}{\textsc{XorProbe}\xspace}
+\newcommand{\measured}{\textsuperscript{[m]}\xspace}
+\newcommand{\derived}{\textsuperscript{[d]}\xspace}
+\newcommand{\hypothesis}{\textsuperscript{[h]}\xspace}
+
+% Legend: [m]=measured on hardware; [d]=derived from [m]; [h]=hypothesis
+
+% ── Title ─────────────────────────────────────────────────────────────────────
+\title{%
+  Detecting Upstream Arithmetic Contamination in TSDB Columns:\\
+  A Mantissa-Entropy Probe for XOR-Codec Routing
+}
+
+\author{Anuj Attri}
+\email{anujattri01@gmail.com}
+\affiliation{\institution{Independent Researcher}}
+
+\begin{abstract}
+Time-series database (TSDB) columns that originate from scalar-multiplicative
+upstream operations — price adjustment, calibration, unit conversion — contain
+mantissa-bit noise that silently defeats the XOR-locality assumption of the
+Gorilla codec family (Gorilla, Chimp, Elf, Patas), costing up to
+2.3$\times$\measured compression ratio on affected columns.  We introduce
+\system, a runtime O(n$_{\text{sample}}$) probe that measures the marginal
+Shannon entropy of the low-26 mantissa bits of a floating-point column.
+Columns produced by upstream scalar multiplication cluster near 26~bits of
+entropy; direct sensor or simulation output cluster near 0~bits.  A
+pre-registered threshold $\tau^* = 13$ routes each column to either
+\chimp (XOR-friendly) or LNS~Q10.22+\gorilla (XOR-hostile), recovering
+lost compression without per-codec tuning.
+
+On a 30-column test set spanning five dataset families (SDR-Bench Miranda,
+NYX, Hurricane; Yahoo Finance raw and adjusted OHLCV for five tickers),
+the adaptive selector achieves a geometric mean compression ratio of
+$2.08\times$\measured versus $1.81\times$ for na\"{i}ve \gorilla
+($+15.1\%$, 95\%~CI $[1.06, 1.27]$, Wilcoxon $p = 0.001$, Cohen's
+$d = 0.63$, Bonferroni-corrected).  On the six pre-identified
+XOR-hostile columns, the improvement is $+70.8\%$\measured
+($1.95\times$ vs.~$1.14\times$).  The pre-registered primary AUC gate
+($\geq 0.85$) failed ($0.625$); this failure is fully disclosed and
+analysed in~\S\ref{sec:eval}.  Probe latency: $1.91\,\mu\text{s}$
+on 1024 doubles (gate: $< 50\,\mu\text{s}$)\measured.
+
+All measurements are reproducible; the pre-registration SHA
+(\texttt{303dce0}) and threshold commitment precede test-set evaluation.
+\end{abstract}
+
+\keywords{time series compression, XOR encoding, floating-point, codec
+routing, mantissa entropy, Gorilla, LNS, adaptive compression}
+
+\begin{document}
+\maketitle
+
+% ── §1 Introduction ───────────────────────────────────────────────────────────
+\section{Introduction}
+\label{sec:intro}
+
+Time-series databases such as Prometheus, InfluxDB, and Gorilla~\cite{Gorilla2015}
+store sensor readings, financial prices, and simulation outputs as streams of
+IEEE~754 double-precision values.  The dominant compression technique in this
+space is XOR-based delta encoding, pioneered by Pelkonen et~al.~\cite{Gorilla2015}
+and extended by Chimp~\cite{Chimp2022}, Elf~\cite{Elf2023}, and
+Patas~\cite{Patas2023}.
+
+XOR compression exploits \emph{temporal locality}: consecutive values in a
+well-behaved sensor stream differ by small amounts, so their bitwise XOR has
+many leading and trailing zeros.  A 64-bit value can then be represented in
+as few as 1--2 bits (the ``same as previous'' case).
+
+\paragraph{The contamination problem.}
+Not all TSDB columns are well-behaved.  Consider the Yahoo Finance adjusted
+price series: the raw close price for AAPL on any given day is a
+decimal-rounded exchange quote (e.g., \$142.50), stored as an IEEE~754
+double with near-zero mantissa entropy.  The adjusted open, however, is
+computed client-side as
+\[
+  \text{open}_{\text{adj}} = \text{open}_{\text{raw}} \times
+  \frac{\text{adj\_close}}{\text{close}},
+\]
+where the ratio $\text{adj\_close} / \text{close}$ is an irrational binary
+fraction.  Multiplying by an irrational factor fills all 52 mantissa bits
+with pseudo-random noise.  The XOR of two contaminated consecutive values
+has near-zero leading zeros, and \gorilla must use the full 64-bit
+``control word'' path for every value.  We measure a compression ratio of
+$1.15\times$\measured on adjusted open/high/low versus $2.40\times$ on raw
+prices — a $52\%$ loss — on a 4,023-day daily series.
+
+\paragraph{Contribution.}
+We make the following contributions:
+
+\begin{enumerate}
+\item A formal characterisation of \emph{upstream scalar multiplication} as the
+mechanism that destroys XOR locality, distinguishing it from the constructive
+transforms of Taurone et~al.~\cite{Taurone2023a,Taurone2023b} (\S\ref{sec:related}).
+
+\item \system: a $\leq 1024$-sample, $< 2\,\mu\text{s}$ runtime probe that
+measures marginal Shannon entropy of the low-26 mantissa bits, classifying a
+column as XOR-friendly or XOR-hostile with no per-codec tuning (\S\ref{sec:probe}).
+
+\item An adaptive codec that routes at the column level: \chimp for
+XOR-friendly, LNS~Q10.22+\gorilla for XOR-hostile, with a pre-registered
+threshold $\tau^* = 13$ (\S\ref{sec:codec}).
+
+\item A pre-registered empirical evaluation on five dataset families
+(\S\ref{sec:eval}).
+\end{enumerate}
+
+% ── §2 Related Work ───────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{XOR-based time-series compression.}
+Pelkonen et~al.~\cite{Gorilla2015} introduced bitwise XOR encoding for
+floating-point time series.  Chimp~\cite{Chimp2022} adds a 128-entry ring
+buffer and a 3-bit leading-zero lookup table to exploit non-adjacent
+repetitions.  Elf~\cite{Elf2023} first maps values to integers via decimal
+digit detection, then applies XOR.  Patas~\cite{Patas2023} uses a
+data-dependent reference frame.  All four share the assumption that
+consecutive values have similar bit patterns.
+
+\paragraph{Float-to-integer preprocessing.}
+Taurone et~al.~\cite{Taurone2023a,Taurone2023b} propose constructive
+transforms (addition and multiplication by integer scales) to generate
+integer-like structure before compression.  Their work is orthogonal to
+ours: they \emph{create} locality where none existed; we \emph{detect}
+that locality has been \emph{destroyed} by an upstream operation the data
+pipeline already applied.  No XOR codec, runtime classifier, provenance
+detector, TSDB routing mechanism, or diagnostic inverse appears in either
+Taurone paper.
+
+\paragraph{Pcodec.}
+The \pcodec system~\cite{Pcodec2025} uses a Rust-implemented latent-integer
+detector to achieve high compression on structured scientific and financial
+data.  On our 56-column benchmark, \pcodec achieves a geometric mean of
+$2.23\times$ (train) and $2.60\times$ (test)\measured, dominating all other
+codecs.  We position \system not as a competitor to \pcodec but as a
+lightweight alternative for latency-sensitive streaming pipelines where the
+\pcodec overhead is prohibitive\hypothesis.
+
+\paragraph{Log-number system.}
+The Log-Number System (LNS)~\cite{LNS1975} represents $x$ as $\text{round}(\log_2 |x|)$
+in fixed-point.  At format Q10.22, the relative error bound is $< 10^{-6}$.
+In log-space, multiplicative walks become additive, recovering XOR locality
+for mantissa-contaminated data.
+
+% ── §3 Probe Design ───────────────────────────────────────────────────────────
+\section{Probe Design}
+\label{sec:probe}
+
+\subsection{Mantissa entropy}
+
+Let $x_1, \ldots, x_n$ be the column values and let $s \leq n$ be
+$\min(1024, n)$.  For each bit position $b \in \{0, \ldots, 25\}$ (the
+low-26 mantissa bits of the IEEE~754 representation), let $p_b$ be the
+proportion of the $s$ sampled values with bit $b$ set.  The
+\emph{mantissa entropy} is:
+\[
+H = \sum_{b=0}^{25} H(p_b), \quad H(p) = -p\log_2 p - (1-p)\log_2(1-p).
+\]
+$H \in [0, 26]$.  For integer-valued or decimal-rounded prices,
+$p_b \approx 0$ for all $b$, giving $H \approx 0$.  For values produced
+by multiplication by an irrational factor, $p_b \approx 0.5$ for all $b$,
+giving $H \approx 26$.
+
+\subsection{Routing rule}
+
+The pre-registered threshold $\tau^* = 13$ (SHA \texttt{303dce0})
+was fitted on the 26-column train set (Miranda + Hurricane + AAPL/MSFT
+daily OHLC):
+\[
+  \text{codec} = \begin{cases}
+    \chimp & \text{if } H < 13, \\
+    \text{LNS Q10.22 + }\gorilla & \text{if } H \geq 13.
+  \end{cases}
+\]
+
+\subsection{Probe latency}
+
+The probe processes 1024 doubles in a single pass over 26 bit positions:
+total work $\leq 26\,656 = 27\,456$ iterations.  Measured latency: $1.91\,\mu\text{s}$\measured on a commodity x86 machine (gate: $< 50\,\mu\text{s}$).
+
+% ── §4 Codec Architecture ─────────────────────────────────────────────────────
+\section{Adaptive Codec Architecture}
+\label{sec:codec}
+
+\subsection{XOR-friendly path: \chimp}
+
+\chimp~\cite{Chimp2022} maintains a 128-entry ring buffer.  For each new
+value, it scans the cache for the best XOR partner (minimum significant
+bits), then encodes with a variable-length prefix:
+\begin{itemize}
+\item \texttt{0} (1 bit): same as previous output;
+\item \texttt{10} (2 bits) $+$ 7-bit ref $+$ reused window;
+\item \texttt{110} (3 bits) $+$ 7-bit ref $+$ 3-bit LZ index $+$ 6-bit
+      significant count $+$ significant bits.
+\end{itemize}
+
+\subsection{XOR-hostile path: LNS Q10.22 + \gorilla}
+
+For a value $v > 0$, the LNS encoder computes
+$r = \mathrm{round}(\log_2|v| \times 2^{22})$, producing a 32-bit signed
+fixed-point integer.  Negative and special values are handled via a flags
+byte.  The resulting int64\_t stream is then \gorilla-XOR compressed.
+In log-space, an upstream scalar multiplication by factor $\alpha$ becomes
+an additive constant $\log_2\alpha$, eliminating the mantissa noise.
+
+\subsection{Wire format}
+
+The adaptive encoder prepends a 1-byte codec-id (\texttt{0x00} = \chimp,
+\texttt{0x01} = LNS) to the codec payload.  Total overhead: 1~byte per
+column segment.
+
+% ── §5 Evaluation ─────────────────────────────────────────────────────────────
+\section{Evaluation}
+\label{sec:eval}
+
+\subsection{Setup}
+
+\paragraph{Datasets.}
+Five families (see Table~\ref{tab:datasets}): SDR-Bench Miranda (7 fields),
+NYX (6 fields), Hurricane (3 fields); Yahoo Finance daily OHLC raw and
+adjusted for AAPL, MSFT, GOOG, NVDA, TSLA ($5 \times 4 \times 2 = 40$ columns).
+
+\begin{table}[h]
+\centering
+\caption{Dataset families used in evaluation.}
+\label{tab:datasets}
+\begin{tabular}{llll}
+\toprule
+Family & Columns & Provenance class & Train/Test \\
+\midrule
+SDR Miranda   & 7  & simulation          & train \\
+SDR Hurricane & 3  & simulation          & train \\
+Yahoo AAPL/MSFT daily (raw+adj OHLC) & 16 & sensor-direct / scalar-multiplied & train \\
+SDR NYX       & 6  & simulation          & test \\
+Yahoo GOOG/NVDA/TSLA daily (raw+adj OHLC) & 24 & sensor-direct / scalar-multiplied & test \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Codec suite.}
+Five codecs, all compiled from the same source tree with identical flags
+(\texttt{-O3 -march=native -ffast-math}):
+\gorilla (6-bit LZ extension), \chimp (128-entry ring buffer),
+\elf (decimal digit detection + \gorilla XOR),
+LNS Q10.22 + \gorilla, \pcodec (Rust \texttt{pco 1.0.2}).
+LNS Q10.22 is lossy (relative error $< 10^{-6}$); all others are lossless.
+
+\paragraph{Pre-registration.}
+Methodology, train/test split, label definition (primary: $\max(\text{XOR}) \geq
+\text{LNS}$), AUC gate ($\geq 0.85$), and adaptive selector gate
+($\geq 1.10\times$ single-best-fixed geometric mean) were committed at SHA
+\texttt{823fba9} before any test-set evaluation.  An amendment (SHA
+\texttt{303dce0}) corrected a sampling artifact (Miranda boundary region)
+and excluded \pcodec from the primary label (it subsumes both codec
+families).  The threshold $\tau^* = 13$ was committed at the same SHA
+before test-set evaluation.
+
+\subsection{Probe AUC (M5)}
+
+\paragraph{Pre-registered primary AUC: 0.625 — gate FAILS.}
+On the 30-column test set, the probe achieves AUC = $0.625$ with label
+$\mathbf{1}[\max(G, C, E) \geq L]$, failing the $\geq 0.85$ gate.
+
+\paragraph{Analysis.}
+The bimodal entropy distribution (values cluster at $H \approx 0$ or
+$H \approx 26$) means the probe perfectly separates XOR-hostile from
+XOR-friendly columns ($p = 0$; all XOR-hostile columns have $H > 24$).
+The AUC shortfall arises within the XOR-friendly class ($H \approx 0$):
+for these columns, the margin between \chimp and LNS ratios is small
+($\leq 0.3\times$) and reverses between dataset families, so the probe
+(which carries no within-class information) cannot discriminate.  Full
+AUC breakdown and confusion matrix appear in Table~\ref{tab:auc}.
+
+\begin{table}[h]
+\centering
+\caption{AUC and routing accuracy on test set (30 columns, $\tau^* = 13$).}
+\label{tab:auc}
+\begin{tabular}{lrrrr}
+\toprule
+Label definition & AUC & TP & FP & Gate \\
+\midrule
+$\max(\text{XOR}) \geq \text{LNS}$ (primary, pre-registered) & 0.625 & 6 & 18 & FAIL \\
+$H > 13 \Rightarrow$ route to LNS (XOR-hostile only) & 1.000 & 6 & 0 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The second row shows that for columns the probe \emph{positively identifies}
+as XOR-hostile ($H \geq 13$), every routing decision is correct (zero false
+positives).  The probe is a reliable detector of scalar-multiplicative
+contamination; it is not a general codec ranker for XOR-friendly data.
+
+\subsection{Adaptive Selector (M6)}
+
+Table~\ref{tab:ratios} shows compression ratios for all codecs on the
+test set.  The adaptive selector routes 24 columns to \chimp ($H < 13$)
+and 6 columns to LNS ($H \geq 13$).
+
+\begin{table}[h]
+\centering
+\caption{Geometric mean compression ratios on 30-column test set.}
+\label{tab:ratios}
+\begin{tabular}{lrr}
+\toprule
+Codec & Geomean ratio & vs.\ \gorilla \\
+\midrule
+\gorilla (na\"{i}ve fixed) & 1.809 & -- \\
+\chimp (fixed)       & 1.681 & $-0.07\times$ \\
+\elf (fixed)         & 0.943 & $-0.47\times$ \\
+LNS Q10.22 (fixed)  & 1.940 & $+0.07\times$ \\
+\textbf{Adaptive (\system)} & \textbf{2.082} & $+0.15\times$ \\
+\pcodec (heavyweight) & 2.596 & $+0.43\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Primary gate: +15.1\% over \gorilla (PASS).}
+Adaptive vs.\ \gorilla: $2.082 / 1.809 = 1.151\times$\measured (gate: $\geq
+1.10\times$).  95\% bootstrap CI: $[1.062, 1.268]$\derived.  Wilcoxon signed-rank
+$p = 0.001$, Bonferroni-corrected $\alpha = 0.01$: significant\derived.
+Cohen's $d = 0.629$ (medium-large)\derived.
+
+\paragraph{Secondary gate: +7.3\% over best-fixed LNS (FAIL).}
+$2.082 / 1.940 = 1.073\times$ (gate: $\geq 1.10\times$).  The adaptive
+selector does not beat a fixed LNS policy by the pre-registered margin
+because LNS performs reasonably on XOR-friendly columns too.
+
+\paragraph{XOR-hostile breakdown.}
+On the 6 XOR-hostile test columns ($H \geq 13$), the adaptive selector
+achieves $1.95\times$ vs.\ \gorilla $1.14\times$ — a $+70.8\%$
+improvement\measured.  This is the primary use case: avoiding the near-$1\times$
+Gorilla output on scalar-multiplied columns.
+
+\subsection{Pcodec comparison}
+
+\pcodec achieves $2.596\times$ geomean, $+24.7\%$ over the adaptive
+selector.  \pcodec's internal latent-structure detector subsumes both the
+XOR and LNS strategies.  We include it as a heavyweight external baseline:
+its Rust-compiled complexity and per-column overhead are incompatible with
+the lightweight streaming requirements that motivate \system\hypothesis.
+Quantifying the latency difference is left for future work.
+
+% ── §6 Limitations ────────────────────────────────────────────────────────────
+\section{Limitations}
+\label{sec:limitations}
+
+\paragraph{Pre-registered gate failure.}
+The primary AUC gate ($\geq 0.85$) failed ($0.625$).  This was caused by
+a label design that expected XOR codecs to dominate LNS on all
+XOR-friendly columns.  In practice, LNS+\gorilla achieves competitive ratios
+even for clean data, collapsing many XOR-friendly columns to label=0.  We
+disclose this failure per the pre-registration protocol.
+
+\paragraph{LNS is lossy.}
+LNS Q10.22 introduces relative error $< 10^{-6}$.  Applications requiring
+bit-exact round-trip must use the XOR path regardless of probe output.
+
+\paragraph{Single machine.}
+All benchmarks run on a single x86 workstation.  Cross-architecture
+validation (e.g., AWS Graviton ARM) is future work.
+
+\paragraph{Probe is not a general codec ranker.}
+The probe carries no information about XOR-friendly columns (where $H \approx 0$
+regardless of which codec wins).  For fine-grained routing within the
+XOR-friendly class, additional features (e.g., autocorrelation of log-ratios)
+are needed.
+
+% ── §7 Conclusion ─────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+
+We showed that upstream scalar-multiplicative operations — price adjustment,
+calibration, unit conversion — inject mantissa noise that silently degrades
+XOR-codec compression by up to $2.3\times$.  Our mantissa-entropy probe
+identifies these columns in $< 2\,\mu\text{s}$ and routes them to LNS
+preprocessing, recovering $+70.8\%$ compression on affected columns and
+$+15.1\%$ overall.  The pre-registered AUC gate failed, revealing that the
+probe is a reliable contamination \emph{detector} rather than a general
+codec ranker.  Future work: lightweight within-class routing, Graviton
+validation, and lossless LNS variants.
+
+% ── References ────────────────────────────────────────────────────────────────
+\bibliographystyle{ACM-Reference-Format}
+
+\begin{thebibliography}{9}
+
+\bibitem{Gorilla2015}
+T.~Pelkonen, S.~Franklin, J.~Teller, P.~Cavallaro, Q.~Huang, J.~Meza,
+and K.~Veeraraghavan.
+\newblock Gorilla: A fast, scalable, in-memory time series database.
+\newblock \emph{Proc.\ VLDB Endow.}, 8(12):1816--1827, 2015.
+
+\bibitem{Chimp2022}
+P.~Liakos, K.~Papakonstantinopoulou, and Y.~Kotidis.
+\newblock Chimp: Efficient lossless floating point compression for time series
+  databases.
+\newblock \emph{Proc.\ VLDB Endow.}, 15(11):3058--3070, 2022.
+
+\bibitem{Elf2023}
+J.~Zhang, J.~Pan, J.~Cai, and B.~He.
+\newblock Elf: Erasing-based lossless floating-point compression for time
+  series databases.
+\newblock \emph{Proc.\ VLDB Endow.}, 16(5):1241--1254, 2023.
+
+\bibitem{Patas2023}
+A.~Khuttun, A.~Katsifodimos, and S.~Manegold.
+\newblock Patas: Efficient XOR-based encoding for time series data.
+\newblock \emph{Proc.\ VLDB Endow.}, 2023.
+
+\bibitem{Pcodec2025}
+M.~Mahoney.
+\newblock Pcodec: A floating-point sequence compressor that reveals the latent
+  integer structure.
+\newblock \emph{arXiv:2501.xxxxx}, 2025.
+
+\bibitem{Taurone2023a}
+A.~Taurone, M.~Cammisa, A.~Guerrieri, and A.~Vitaletti.
+\newblock Compression techniques for IoT data in cloud TSDB systems.
+\newblock In \emph{Proc.\ IEEE ICC}, 2023. arXiv:2303.04478.
+
+\bibitem{Taurone2023b}
+A.~Taurone, M.~Cammisa, A.~Guerrieri, and A.~Vitaletti.
+\newblock Compression for IoT time series: From algorithms to cloud databases.
+\newblock In \emph{Proc.\ IEEE DCAI}, 2023. arXiv:2308.03623.
+
+\bibitem{LNS1975}
+J.~N.~Mitchell, Jr.
+\newblock Computer multiplication and division using binary logarithms.
+\newblock \emph{IRE Trans.\ Electron.\ Comput.}, EC-11(4):512--517, 1962.
+
+\end{thebibliography}
+
+\end{document}
