@@ -1,0 +1,15 @@
+build/
+data/*.bin
+data/*.csv
+*.bin
+*.csv
+.vscode/
+.idea/
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+*.vcxproj
+*.vcxproj.filters
+*.sln
+results/*.csv
