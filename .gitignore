@@ -1,6 +1,9 @@
 build/
 data/*.bin
 data/*.csv
+data/**/*.bin
+data/**/*.csv
+data/**/MANIFEST.txt
 *.bin
 *.csv
 .vscode/

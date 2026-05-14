@@ -160,6 +160,38 @@ Synthetic datasets are deterministic (seeds in `tools/gen_synthetic.cpp`). Resul
 
 ---
 
+---
+
+## Pre-registration — Real-World Validation Hypotheses
+
+**Locked before any data was fetched. Commit SHA of this block recorded below.**
+
+These hypotheses were written and committed prior to downloading any real-world data. Results are reported as-is regardless of outcome. No threshold adjustment after seeing data.
+
+### H1 (Daily OHLCV)
+**LNS-Q8.24 + Gorilla achieves median compression ratio ≥ 1.8× across all 10 tickers' close prices, with Wilcoxon p < 0.001 and consistent direction (all 10 tickers favor LNS).**
+
+Tickers: AAPL, MSFT, GOOG, AMZN, META, NVDA, TSLA, JPM, XOM, BRK-B. Source: Yahoo Finance, 20 years daily, auto_adjust=True.
+
+### H2 (Intraday)
+**LNS-Q8.24 + Gorilla achieves ≥ 1.5× on 1-minute bars (smaller relative steps → tighter LNS quantization regime).**
+
+Tickers: SPY, QQQ, AAPL. Last 30 trading days of 1-min OHLCV.
+
+### H3 (Scientific)
+**LNS-Q8.24 + Gorilla achieves ≥ 1.5× on at least 2 of 3 SDR-Bench arrays.**
+
+Arrays attempted: Miranda density, NYX temperature, Hurricane Isabel pressure.
+
+### Decision Rule
+- H1 AND H2 hold → **paper-worthy**
+- H1 holds alone → **strong tech note**
+- Neither holds → **honest negative result**
+
+*Pre-registration commit SHA: [to be filled after commit]*
+
+---
+
 ## Future Work
 
 - **SIMD LNS:** AVX2 implementation of log2 + Gorilla bit-stream packing. Expected 4-8× encode speedup.
