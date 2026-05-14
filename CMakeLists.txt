@@ -110,6 +110,7 @@ add_executable(tests
     tests/test_probe.cpp
     tests/test_chimp_elf.cpp
     tests/test_pcodec.cpp
+    tests/test_adaptive.cpp
 )
 target_include_directories(tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
