@@ -62,7 +62,7 @@ If you use this software or reproduce results from it, please cite:
              {Gorilla} {XOR} compression on multiplicative time-series},
   year    = {2026},
   version = {0.1.0},
-  url     = {https://github.com/anujattri01/lns-gorilla-timeseries},
+  url     = {https://github.com/Anuj-Attri/lns-gorilla-timeseries},
   license = {Apache-2.0}
 }
 ```

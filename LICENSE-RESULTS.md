@@ -35,7 +35,7 @@ When reproducing or adapting results from `RESULTS.md`, include:
 
 > Results originally from: Attri, A. (2026). *LNS-Gorilla: Log-Number-System
 > preprocessing for Gorilla XOR compression on multiplicative time-series* (v0.1.0).
-> https://github.com/anujattri01/lns-gorilla-timeseries. Licensed CC BY 4.0.
+> https://github.com/Anuj-Attri/lns-gorilla-timeseries. Licensed CC BY 4.0.
 
 ---
 

@@ -18,7 +18,7 @@ you are required to cite it. Suggested citation:
 
   Attri, A. (2026). LNS-Gorilla: Log-Number-System preprocessing for
   Gorilla XOR compression on multiplicative time-series (v0.1.0).
-  https://github.com/anujattri01/lns-gorilla-timeseries
+  https://github.com/Anuj-Attri/lns-gorilla-timeseries
   SPDX-License-Identifier: Apache-2.0
 
 BibTeX (also see CITATION.cff):
@@ -29,7 +29,7 @@ BibTeX (also see CITATION.cff):
                {Gorilla} {XOR} compression on multiplicative time-series},
     year    = {2026},
     version = {0.1.0},
-    url     = {https://github.com/anujattri01/lns-gorilla-timeseries},
+    url     = {https://github.com/Anuj-Attri/lns-gorilla-timeseries},
     license = {Apache-2.0}
   }
 

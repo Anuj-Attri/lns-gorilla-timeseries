@@ -8,8 +8,8 @@ authors:
 version: "0.1.0"
 date-released: "2026-05-13"
 license: Apache-2.0
-url: "https://github.com/anujattri01/lns-gorilla-timeseries"
-repository-code: "https://github.com/anujattri01/lns-gorilla-timeseries"
+url: "https://github.com/Anuj-Attri/lns-gorilla-timeseries"
+repository-code: "https://github.com/Anuj-Attri/lns-gorilla-timeseries"
 abstract: >
   A C++17 research benchmark testing whether Log-Number-System (LNS) fixed-point
   preprocessing followed by Gorilla XOR compression achieves better compression
