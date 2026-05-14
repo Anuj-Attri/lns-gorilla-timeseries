@@ -1,0 +1,13 @@
+multiplier_label,multiplier_value,mult_desc,pco_mode,H,ratio_pco,ratio_lns,ratio_chimp128
+1,1,trivial (int -> int),FloatMult,0.0,38.8916,5.5062,8.0518
+0.01,0.01,decimal rational,FloatMult,25.871,38.7597,5.2104,1.572
+0.1,0.1,decimal rational,FloatMult,25.164,38.7597,5.5644,8.1828
+1/2,0.5,binary rational,FloatMult,0.0,38.8916,5.5062,8.0518
+1/3,0.333333333333333,rational, infinite binary,FloatMult,23.847,38.7597,4.752,8.1949
+1/7,0.142857142857143,rational, infinite binary,FloatMult,25.787,38.7597,5.469,8.1642
+1/pi,0.318309886183791,transcendental,FloatMult,25.506,38.7597,5.2886,1.7336
+1/e,0.367879441171442,transcendental,FloatMult,25.823,38.7597,5.518,1.6772
+sqrt(2),1.4142135623731,algebraic irrational,FloatMult,23.53,38.7597,5.5062,1.7293
+log2(e),1.44269504088896,transcendental,FloatMult,25.777,38.7597,4.7704,1.65
+pi/4,0.785398163397448,transcendental,FloatMult,25.642,38.7597,5.6649,1.7144
+e/3,0.906093942819682,transcendental,FloatMult,25.562,38.7597,5.7184,1.7063
