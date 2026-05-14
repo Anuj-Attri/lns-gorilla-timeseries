@@ -1,3 +1,9 @@
+// Copyright 2026 Anuj Attri
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//     http://www.apache.org/licenses/LICENSE-2.0
+// SPDX-License-Identifier: Apache-2.0
 // gen_synthetic.cpp — generate synthetic time-series datasets as raw f64 binary files.
 //
 // Outputs to data/synthetic/<name>.bin (little-endian IEEE 754 double, no header).

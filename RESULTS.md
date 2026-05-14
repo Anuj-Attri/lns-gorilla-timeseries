@@ -1,3 +1,4 @@
+<!-- Licensed under CC BY 4.0 — see LICENSE-RESULTS.md -->
 # RESULTS: LNS-Gorilla Timeseries Compression
 
 ## Claim

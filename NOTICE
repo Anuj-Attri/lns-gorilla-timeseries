@@ -1,0 +1,67 @@
+lns-gorilla-timeseries
+Copyright 2026 Anuj Attri
+
+This product is licensed under the Apache License, Version 2.0
+(the "License"). You may obtain a copy of the License at:
+    http://www.apache.org/licenses/LICENSE-2.0
+
+The benchmark results in RESULTS.md are licensed separately under
+Creative Commons Attribution 4.0 International (CC BY 4.0).
+See LICENSE-RESULTS.md for the full legalcode.
+
+------------------------------------------------------------------------
+ATTRIBUTION REQUIREMENTS
+------------------------------------------------------------------------
+
+If you use or build upon this software in research or publications,
+you are required to cite it. Suggested citation:
+
+  Attri, A. (2026). LNS-Gorilla: Log-Number-System preprocessing for
+  Gorilla XOR compression on multiplicative time-series (v0.1.0).
+  https://github.com/anujattri01/lns-gorilla-timeseries
+  SPDX-License-Identifier: Apache-2.0
+
+BibTeX (also see CITATION.cff):
+
+  @software{attri2026lnsgorilla,
+    author  = {Attri, Anuj},
+    title   = {{LNS-Gorilla}: Log-Number-System preprocessing for
+               {Gorilla} {XOR} compression on multiplicative time-series},
+    year    = {2026},
+    version = {0.1.0},
+    url     = {https://github.com/anujattri01/lns-gorilla-timeseries},
+    license = {Apache-2.0}
+  }
+
+If you reproduce or adapt the benchmark results from RESULTS.md, cite
+under CC BY 4.0 and include the statement:
+  "Results originally from Attri (2026), lns-gorilla-timeseries,
+   licensed CC BY 4.0."
+
+------------------------------------------------------------------------
+THIRD-PARTY COMPONENTS
+------------------------------------------------------------------------
+
+This project fetches the following dependencies at build time via CMake
+FetchContent. They are not redistributed in source form.
+
+  google/benchmark v1.9.1 — Apache License 2.0
+    https://github.com/google/benchmark
+
+  catchorg/Catch2 v3.6.0 — Boost Software License 1.0
+    https://github.com/catchorg/Catch2
+
+  cwida/ALP — MIT License (optional, Clang-only build)
+    https://github.com/cwida/ALP
+
+The Gorilla XOR compression algorithm in include/lns/gorilla_codec.hpp
+is a clean-room implementation of the algorithm described in:
+
+  Pelkonen, T., Franklin, S., Teller, J., Cavallaro, P., Huang, Q.,
+  Meza, J., and Veeraraghavan, K. (2015). Gorilla: A Fast, Scalable,
+  In-Memory Time Series Database. Proc. VLDB Endow. 8(12), 1816–1827.
+  https://doi.org/10.14778/2824032.2824078
+
+No source code from the original Gorilla implementation was used.
+The 6-bit leading-zero field extension is an intentional deviation
+from the paper's 5-bit field; see RESULTS.md §Setup for rationale.

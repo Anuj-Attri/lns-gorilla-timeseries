@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "LNS-Gorilla: Log-Number-System preprocessing for Gorilla XOR compression on multiplicative time-series"
+authors:
+  - family-names: Attri
+    given-names: Anuj
+    email: anujattri01@gmail.com
+version: "0.1.0"
+date-released: "2026-05-13"
+license: Apache-2.0
+url: "https://github.com/anujattri01/lns-gorilla-timeseries"
+repository-code: "https://github.com/anujattri01/lns-gorilla-timeseries"
+abstract: >
+  A C++17 research benchmark testing whether Log-Number-System (LNS) fixed-point
+  preprocessing followed by Gorilla XOR compression achieves better compression
+  ratios on multiplicative time-series (stock prices, geometric random walks) than
+  applying Gorilla directly to IEEE 754 doubles. LNS Q8.24+Gorilla achieves
+  2.07–2.20× on low-to-moderate-volatility multiplicative data; LNS Q12.16+Gorilla
+  achieves 2.81–3.02×. Plain Gorilla achieves 1.09–1.15× on the same data. Encode
+  throughput: ~73–82 M values/s (~15% overhead vs Gorilla alone). Failure modes
+  (LNS saturation on high-volatility data, near-zero sign-flip regression) are
+  documented in RESULTS.md.
+keywords:
+  - time-series compression
+  - Gorilla XOR
+  - log-number-system
+  - LNS
+  - floating-point compression
+  - C++
+  - benchmark
+  - reproducible research
+references:
+  - type: article
+    title: "Gorilla: A Fast, Scalable, In-Memory Time Series Database"
+    authors:
+      - family-names: Pelkonen
+        given-names: Tuomas
+      - family-names: Franklin
+        given-names: Scott
+      - family-names: Teller
+        given-names: Justin
+      - family-names: Cavallaro
+        given-names: Paul
+      - family-names: Huang
+        given-names: Qi
+      - family-names: Meza
+        given-names: Justin
+      - family-names: Veeraraghavan
+        given-names: Kaushik
+    journal: "Proceedings of the VLDB Endowment"
+    volume: 8
+    issue: 12
+    start: 1816
+    end: 1827
+    year: 2015
+    doi: "10.14778/2824032.2824078"

@@ -51,6 +51,30 @@ results/       — benchmark CSVs
 - [catchorg/Catch2](https://github.com/catchorg/Catch2) v3
 - [cwida/ALP](https://github.com/cwida/ALP)
 
+## Citation
+
+If you use this software or reproduce results from it, please cite:
+
+```bibtex
+@software{attri2026lnsgorilla,
+  author  = {Attri, Anuj},
+  title   = {{LNS-Gorilla}: Log-Number-System preprocessing for
+             {Gorilla} {XOR} compression on multiplicative time-series},
+  year    = {2026},
+  version = {0.1.0},
+  url     = {https://github.com/anujattri01/lns-gorilla-timeseries},
+  license = {Apache-2.0}
+}
+```
+
+See [CITATION.cff](CITATION.cff) for the full citation metadata.
+
 ## License
 
-MIT — see [LICENSE](LICENSE).
+**Source code** (`include/`, `src/`, `bench/`, `tests/`, `tools/`, `CMakeLists.txt`):
+Apache License 2.0 — see [LICENSE](LICENSE).
+
+**Benchmark results** (`RESULTS.md`, `POST_DRAFT.md`):
+Creative Commons Attribution 4.0 International (CC BY 4.0) — see [LICENSE-RESULTS.md](LICENSE-RESULTS.md).
+
+Attribution is required for both. See [NOTICE](NOTICE) for full requirements.

@@ -1,3 +1,9 @@
+// Copyright 2026 Anuj Attri
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//     http://www.apache.org/licenses/LICENSE-2.0
+// SPDX-License-Identifier: Apache-2.0
 // csv_to_bin.cpp — convert a single-column CSV of doubles to raw f64 binary.
 //
 // Usage: ./csv_to_bin input.csv output.bin [column_index]
