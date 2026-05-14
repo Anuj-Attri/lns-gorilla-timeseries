@@ -69,6 +69,17 @@ else()
     message(STATUS "ALP: disabled (requires Clang, got ${CMAKE_CXX_COMPILER_ID}) — alp_codec falls back to IEEE baseline")
 endif()
 
+# ── Pcodec: Rust staticlib C ABI ─────────────────────────────────────────────
+set(PCO_WRAPPER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/pco_wrapper)
+set(PCO_LIB        ${PCO_WRAPPER_DIR}/target/release/libpco_wrapper.a)
+if(EXISTS ${PCO_LIB})
+    set(PCO_AVAILABLE TRUE)
+    message(STATUS "Pcodec: enabled (found ${PCO_LIB})")
+else()
+    set(PCO_AVAILABLE FALSE)
+    message(STATUS "Pcodec: disabled (run 'cargo build --release' in third_party/pco_wrapper)")
+endif()
+
 # ── Shared codec library ──────────────────────────────────────────────────────
 add_library(lns_codecs STATIC
     src/lns_codec.cpp
@@ -84,6 +95,11 @@ if(ALP_AVAILABLE)
 else()
     target_compile_definitions(lns_codecs PUBLIC LNS_HAS_ALP=0)
 endif()
+if(PCO_AVAILABLE)
+    target_compile_definitions(lns_codecs PUBLIC LNS_HAS_PCO=1)
+else()
+    target_compile_definitions(lns_codecs PUBLIC LNS_HAS_PCO=0)
+endif()
 target_compile_options(lns_codecs PRIVATE ${OPT_FLAGS})
 
 # ── Unit tests ────────────────────────────────────────────────────────────────
@@ -92,11 +108,19 @@ add_executable(tests
     tests/test_gorilla.cpp
     tests/test_composite.cpp
     tests/test_probe.cpp
+    tests/test_chimp_elf.cpp
+    tests/test_pcodec.cpp
 )
 target_include_directories(tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(tests PRIVATE lns_codecs Catch2::Catch2WithMain)
+if(PCO_AVAILABLE)
+    target_link_libraries(tests PRIVATE ${PCO_LIB})
+    if(WIN32)
+        target_link_libraries(tests PRIVATE ws2_32 userenv bcrypt ntdll)
+    endif()
+endif()
 target_compile_options(tests PRIVATE ${ASAN_FLAGS})
 if(ASAN_LDFLAGS)
     target_link_options(tests PRIVATE ${ASAN_LDFLAGS})

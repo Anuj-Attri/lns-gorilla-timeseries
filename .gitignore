@@ -22,3 +22,6 @@ Makefile
 *.vcxproj
 *.vcxproj.filters
 *.sln
+third_party/pco_wrapper/target/
+third_party/pco_wrapper/Cargo.lock
+.claude/
