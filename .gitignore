@@ -3,7 +3,14 @@ data/*.bin
 data/*.csv
 data/**/*.bin
 data/**/*.csv
+data/**/*.tar.gz
+data/**/*.f32
+data/**/100x500x500/
+data/**/256x384x384/
+data/**/512x512x512/
 data/**/MANIFEST.txt
+results/*.csv
+results/*_summary.txt
 *.bin
 *.csv
 .vscode/
@@ -15,4 +22,3 @@ Makefile
 *.vcxproj
 *.vcxproj.filters
 *.sln
-results/*.csv
