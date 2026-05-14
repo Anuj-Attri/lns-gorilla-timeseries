@@ -161,6 +161,17 @@ add_executable(csv_to_bin tools/csv_to_bin.cpp)
 target_include_directories(csv_to_bin PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_options(csv_to_bin PRIVATE ${OPT_FLAGS})
 
+add_executable(probe_eval tools/probe_eval.cpp)
+target_include_directories(probe_eval PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(probe_eval PRIVATE lns_codecs)
+if(PCO_AVAILABLE)
+    target_link_libraries(probe_eval PRIVATE ${PCO_LIB})
+    if(WIN32)
+        target_link_libraries(probe_eval PRIVATE ws2_32 userenv bcrypt ntdll)
+    endif()
+endif()
+target_compile_options(probe_eval PRIVATE ${OPT_FLAGS})
+
 # ── CTest integration ─────────────────────────────────────────────────────────
 include(CTest)
 include(Catch)
