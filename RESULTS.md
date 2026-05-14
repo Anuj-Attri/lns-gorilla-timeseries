@@ -335,7 +335,7 @@ The technique does **not generalize to sign-changing data** (wind velocity, near
 
 ---
 
-## Toward a Paper (H1 failed — this section is speculative and not a call to publish)
+## Shortcomings
 
 For a full paper, the following would be needed even if H1 held:
 
